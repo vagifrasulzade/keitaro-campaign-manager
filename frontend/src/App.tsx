@@ -3,6 +3,7 @@ import { api, errorText } from "./api/client";
 import type { Meta } from "./api/types";
 import { useToast } from "./components/Toast";
 import { Card } from "./components/ui";
+import { CreateCampaign } from "./pages/CreateCampaign";
 
 type Tab = "create" | "editor";
 
@@ -63,10 +64,16 @@ export default function App() {
         </div>
       )}
 
+      {/* both pages stay mounted so a half-filled form survives switching tabs */}
       <main className="mx-auto max-w-6xl px-4 py-6">
-        <Card>
-          <p className="text-sm text-gray-500">{TABS.find((t) => t.id === tab)?.label} — coming next.</p>
-        </Card>
+        <div hidden={tab !== "create"}>
+          <CreateCampaign meta={meta} onOpenInEditor={() => setTab("editor")} />
+        </div>
+        <div hidden={tab !== "editor"}>
+          <Card>
+            <p className="text-sm text-gray-500">Campaign editor — coming next.</p>
+          </Card>
+        </div>
       </main>
     </div>
   );
