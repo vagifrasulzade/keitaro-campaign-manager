@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { api, errorText } from "./api/client";
 import type { Meta } from "./api/types";
 import { useToast } from "./components/Toast";
-import { Card } from "./components/ui";
+import { CampaignEditor } from "./pages/CampaignEditor";
 import { CreateCampaign } from "./pages/CreateCampaign";
 
 type Tab = "create" | "editor";
@@ -16,6 +16,7 @@ export default function App() {
   const toast = useToast();
   const [tab, setTab] = useState<Tab>("create");
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [editorCampaignId, setEditorCampaignId] = useState<number | null>(null);
 
   useEffect(() => {
     let ignore = false;
@@ -31,6 +32,11 @@ export default function App() {
       ignore = true;
     };
   }, [toast]);
+
+  function openInEditor(campaignId: number) {
+    setEditorCampaignId(campaignId);
+    setTab("editor");
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 text-gray-800">
@@ -67,12 +73,10 @@ export default function App() {
       {/* both pages stay mounted so a half-filled form survives switching tabs */}
       <main className="mx-auto max-w-6xl px-4 py-6">
         <div hidden={tab !== "create"}>
-          <CreateCampaign meta={meta} onOpenInEditor={() => setTab("editor")} />
+          <CreateCampaign meta={meta} onOpenInEditor={openInEditor} />
         </div>
         <div hidden={tab !== "editor"}>
-          <Card>
-            <p className="text-sm text-gray-500">Campaign editor — coming next.</p>
-          </Card>
+          <CampaignEditor active={tab === "editor"} campaignId={editorCampaignId} onSelect={setEditorCampaignId} />
         </div>
       </main>
     </div>
