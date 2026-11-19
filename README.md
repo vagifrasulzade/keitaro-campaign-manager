@@ -29,7 +29,7 @@ The React app is built inside the image and served by FastAPI. Migrations run au
 
 ### Option B: local (SQLite)
 
-Requirements: Python 3.11+, Node.js 20+.
+Requirements: Python 3.11+, Node.js 20.19+ or 22.12+ (Vite 8).
 
 **Backend** (terminal 1):
 
@@ -47,11 +47,10 @@ uvicorn app.main:app --reload # http://localhost:8000
 **Frontend** (terminal 2):
 
 ```bash
-cd frontend
-npm install
-npm run dev                   # http://localhost:5173, /api is proxied to :8000
+cd frontend && npm install && npm run dev   # http://localhost:5173; /api, /docs, /openapi.json are proxied to :8000
 ```
 
+Other scripts: `npm run typecheck` (TypeScript only) and `npm run build` (type check + production build into `frontend/dist`).
 To serve the UI from FastAPI instead (single port), run `npm run build`. FastAPI then serves `frontend/dist` at http://localhost:8000.
 
 ### Demo without an API key
@@ -115,17 +114,25 @@ keitaro-campaign-manager/
 │   ├── alembic/                        # migrations (async env.py)
 │   ├── tests/                          # pytest + httpx ASGITransport + FakeKeitaroClient
 │   ├── alembic.ini · pyproject.toml · requirements.txt
-├── frontend/                           # React 19 + TypeScript + Vite
+├── frontend/                           # React 19 + TypeScript + Vite + Tailwind CSS v4
 │   ├── src/
-│   │   ├── api/  client.ts · types.ts  # typed fetch wrapper, mirrors backend schemas
+│   │   ├── api/
+│   │   │   ├── types.ts                # interfaces mirroring the backend schemas
+│   │   │   └── client.ts               # fetch wrapper, one function per endpoint, readable errors
 │   │   ├── components/
-│   │   │   ├── OfferAutocomplete.tsx   # debounced offer search, ignores stale responses
-│   │   │   ├── StreamCard.tsx          # stream + offers table, push / cancel
-│   │   │   └── Toast.tsx               # toasts + useAction (busy flag, error handling)
-│   │   ├── pages/  CreateCampaign.tsx · CampaignEditor.tsx
-│   │   ├── App.tsx · main.tsx · styles.css
-│   ├── vite.config.ts                  # dev proxy /api → :8000
-│   └── package.json
+│   │   │   ├── OfferAutocomplete.tsx   # debounced offer search, ignores stale responses, ↑ ↓ Enter Esc
+│   │   │   ├── StreamCard.tsx          # stream + offers table: add / remove / pin, push / cancel
+│   │   │   ├── Toast.tsx               # toasts + useAction (busy flag, errors as toasts)
+│   │   │   └── ui.tsx                  # Button, Tag, Card, Field
+│   │   ├── pages/
+│   │   │   ├── CreateCampaign.tsx      # part 1: form + result card
+│   │   │   └── CampaignEditor.tsx      # part 2: campaign list + stream cards
+│   │   ├── format.ts                   # filter text, stream ordering
+│   │   ├── App.tsx                     # top bar, tabs, /meta, demo-mode banner
+│   │   └── main.tsx · index.css        # entry point; index.css only imports Tailwind
+│   ├── vite.config.ts                  # Tailwind plugin, dev proxy /api · /docs · /openapi.json → :8000
+│   ├── tsconfig.json                   # strict mode
+│   └── package.json                    # dev · build · preview · typecheck
 ├── Dockerfile (multi-stage: node build → python) · docker-compose.yml · .env.example
 ```
 
