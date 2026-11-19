@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # --- Campaign creator defaults ------------------------------------------
     # Names (not ids) so the same .env works on any tracker; resolved via API.
-    # If a name is not found and the tracker has exactly one item, that item is used.
+    # Matched against active (non-archived) items only; no match → the user must pick one in the form.
     default_domain: str = "kylovoa.com"
     default_group: str = "FORTESTS"
     default_traffic_source: str = "FORTESTS"

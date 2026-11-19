@@ -50,10 +50,17 @@ class CampaignCreator:
 
         meta = KeitaroMeta(self.keitaro, self.settings)
         lookups = await meta.lookups()
-        domain_id = meta.resolve(data.domain_id, lookups.default_domain_id, lookups.domains, "domain")
-        group_id = meta.resolve(data.group_id, lookups.default_group_id, lookups.groups, "group")
+        s = self.settings
+        domain_id = meta.resolve(
+            data.domain_id, lookups.default_domain_id, lookups.domains, "domain", s.default_domain
+        )
+        group_id = meta.resolve(data.group_id, lookups.default_group_id, lookups.groups, "group", s.default_group)
         source_id = meta.resolve(
-            data.traffic_source_id, lookups.default_traffic_source_id, lookups.traffic_sources, "traffic source"
+            data.traffic_source_id,
+            lookups.default_traffic_source_id,
+            lookups.traffic_sources,
+            "traffic source",
+            s.default_traffic_source,
         )
 
         alias = generate_alias()

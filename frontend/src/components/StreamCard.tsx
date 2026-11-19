@@ -5,7 +5,7 @@ import type { Stream, StreamOffer } from "../api/types";
 import { formatFilter } from "../format";
 import { OfferAutocomplete } from "./OfferAutocomplete";
 import { useAction, useToast } from "./Toast";
-import { Button, Card, Tag } from "./ui";
+import { Button, Card, Notice, Tag } from "./ui";
 
 interface Props {
   stream: Stream;
@@ -52,9 +52,9 @@ export function StreamCard({ stream, onChange }: Props) {
       ) : (
         <>
           {stream.is_dirty && (
-            <p className="mt-3 rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              Unpublished changes — Keitaro still has the previous version.
-            </p>
+            <div className="mt-3">
+              <Notice>Unpublished changes — Keitaro still has the previous version.</Notice>
+            </div>
           )}
 
           <div className="mt-3 overflow-x-auto">

@@ -4,7 +4,7 @@ import { api } from "../api/client";
 import type { Campaign, Meta, NamedItem, Offer, Stream } from "../api/types";
 import { OfferAutocomplete } from "../components/OfferAutocomplete";
 import { useAction, useToast } from "../components/Toast";
-import { Button, Card, Field, INPUT_CLASS, LINK_CLASS, Tag } from "../components/ui";
+import { Button, Card, Field, INPUT_CLASS, LINK_CLASS, Notice, Tag } from "../components/ui";
 import { byPosition, formatFilter } from "../format";
 
 const COUNTRY_CODE = /^[A-Z]{2}$/;
@@ -80,6 +80,15 @@ export function CreateCampaign({ meta, onOpenInEditor }: Props) {
   const targetSummary = meta
     ? [nameOf(meta.domains, domain), nameOf(meta.groups, group), nameOf(meta.traffic_sources, source)].join(" · ")
     : "";
+  // no default in Keitaro (e.g. archived) and nothing picked yet → the user has to choose
+  const missing = meta
+    ? [
+        { label: "domain", id: domain, items: meta.domains },
+        { label: "group", id: group, items: meta.groups },
+        { label: "traffic source", id: source, items: meta.traffic_sources },
+      ].filter((m) => m.id === null)
+    : [];
+  const targetOpen = showTarget || missing.length > 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -151,14 +160,23 @@ export function CreateCampaign({ meta, onOpenInEditor }: Props) {
           <div>
             <button
               type="button"
-              aria-expanded={showTarget}
+              aria-expanded={targetOpen}
               className="text-sm text-gray-600 hover:text-gray-900"
               onClick={() => setShowTarget((v) => !v)}
             >
-              {showTarget ? "▾" : "▸"} Domain, group, source
-              {!showTarget && targetSummary && <span className="ml-2 text-gray-400">{targetSummary}</span>}
+              {targetOpen ? "▾" : "▸"} Domain, group, source
+              {!targetOpen && targetSummary && <span className="ml-2 text-gray-400">{targetSummary}</span>}
             </button>
-            {showTarget && (
+            {missing.map(({ label, items }) => (
+              <div key={label} className="mt-2">
+                <Notice>
+                  {items.length === 0
+                    ? `Keitaro has no active ${label}s for this API key — the default one may be archived. Restore it in Keitaro.`
+                    : `The default ${label} was not found in Keitaro (archived or renamed?) — pick one below.`}
+                </Notice>
+              </div>
+            ))}
+            {targetOpen && (
               <div className="mt-3 grid gap-3 sm:grid-cols-3">
                 <SelectField label="Domain" items={meta?.domains} value={domain} onChange={setDomainId} />
                 <SelectField label="Group" items={meta?.groups} value={group} onChange={setGroupId} />

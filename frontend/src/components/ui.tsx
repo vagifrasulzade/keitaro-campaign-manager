@@ -61,6 +61,11 @@ export function Card({ highlight = false, className = "", ...props }: CardProps)
   return <section className={`rounded-lg border bg-white p-5 ${border} ${className}`} {...props} />;
 }
 
+/** amber info box: unpublished changes, missing defaults */
+export function Notice({ children }: { children: ReactNode }) {
+  return <p className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-800">{children}</p>;
+}
+
 interface FieldProps {
   label: string;
   htmlFor: string;

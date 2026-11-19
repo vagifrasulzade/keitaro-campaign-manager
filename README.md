@@ -8,7 +8,7 @@ A wrapper around the **Keitaro** tracker Admin API.
    Domain, group and traffic source are filled in from defaults (`kylovoa.com`, `FORTESTS`, `FORTESTS`) or can be picked in the form.
 2. **Campaign editor**: add, remove and bring back offers in a stream, pin a share manually, rebalance the percentages, publish to Keitaro (*Push*) or discard the draft (*Cancel*).
 
-**Stack:** FastAPI · SQLAlchemy 2 (async) · Alembic · httpx · Pydantic v2 · PostgreSQL / SQLite · React 19 + TypeScript + Vite.
+**Stack:** FastAPI · SQLAlchemy 2 (async) · Alembic · httpx · Pydantic v2 · PostgreSQL / SQLite · React 19 + TypeScript + Vite + Tailwind CSS v4.
 
 ![Create campaign](docs/create.png)
 ![Editor](docs/editor-draft.png)
@@ -35,7 +35,7 @@ Requirements: Python 3.11+, Node.js 20.19+ or 22.12+ (Vite 8).
 
 ```bash
 python -m venv .venv
-source .venv/bin/activate     # Windows: .venv\Scripts\activate
+source .venv/bin/activate     # Windows Git Bash: source .venv/Scripts/activate · PowerShell: .venv\Scripts\activate
 pip install -r backend/requirements.txt
 cp .env.example .env          # set KEITARO_URL and KEITARO_API_KEY
 
@@ -53,15 +53,11 @@ cd frontend && npm install && npm run dev   # http://localhost:5173; /api, /docs
 Other scripts: `npm run typecheck` (TypeScript only) and `npm run build` (type check + production build into `frontend/dist`).
 To serve the UI from FastAPI instead (single port), run `npm run build`. FastAPI then serves `frontend/dist` at http://localhost:8000.
 
-### Demo without an API key
-
-Set `KEITARO_MOCK=true` in `.env`. The app then uses an in-memory fake Keitaro with sample offers instead of the real tracker. This lets you try the UI without creating anything in Keitaro.
-
 ### Tests
 
 ```bash
 cd backend
-pytest -q        # 53 tests: share allocator, creator, editor, sync, API
+pytest -q        # 54 tests: share allocator, creator, editor, sync, API
 ```
 
 ### Migrations
@@ -74,6 +70,35 @@ alembic downgrade -1                                  # roll back the last one
 ```
 
 `DATABASE_URL` is read from `.env`. It defaults to SQLite; Docker uses PostgreSQL.
+
+---
+
+## Configuration (`.env`)
+
+| Variable | Default | Description |
+|---|---|---|
+| `KEITARO_URL` | – | Tracker URL without `/admin_api/v1`, e.g. `https://tlgk.host` |
+| `KEITARO_API_KEY` | – | Keitaro admin → Profile → API keys |
+| `KEITARO_MOCK` | `false` | `false` → real Keitaro (`client.py`); `true` → in-memory fake tracker (`fake.py`), no key needed |
+| `DATABASE_URL` | SQLite `backend/adrobot.db` | e.g. `postgresql+asyncpg://user:pass@localhost:5432/db` |
+| `DEFAULT_DOMAIN` | `kylovoa.com` | Default domain (looked up by name) |
+| `DEFAULT_GROUP` | `FORTESTS` | Default campaign group (looked up by name) |
+| `DEFAULT_TRAFFIC_SOURCE` | `FORTESTS` | Default traffic source (looked up by name) |
+| `GEO_REDIRECT_URL` | `https://google.com` | Where visitors from the selected countries are sent |
+| `OFFERS_CACHE_TTL_SECONDS` | `600` | Offer autocomplete cache lifetime |
+
+If a default name is not found and the tracker has exactly one domain / group / source, that one is used.
+
+### Demo mode
+
+Set `KEITARO_MOCK=true`. The app then uses an in-memory fake Keitaro with sample offers instead of the real tracker, so you can try the whole UI without an API key and without creating anything in Keitaro. Restart the backend after changing `.env`.
+
+When switching from demo to real mode, reset the local database so cached demo offers are gone:
+
+```bash
+cd backend
+rm -f adrobot.db && alembic upgrade head
+```
 
 ---
 
@@ -147,7 +172,7 @@ The code is split into layers: **API** (validation, HTTP) → **services** (logi
 `POST /api/v1/campaigns`
 
 ```json
-{ "name": "campaign 2", "geo": "MX, AU, RO", "offer_id": 3749 }
+{ "name": "test_rasulzade_campaign1", "geo": "AU, MX", "offer_id": 18813 }
 ```
 
 1. The geo is normalized: `mx, au` → `["MX","AU"]`, duplicates are removed and every code is checked as ISO-3166 alpha-2.
@@ -201,3 +226,11 @@ The editor can open **any** campaign in Keitaro, not only the ones created here.
 | POST | `/api/v1/streams/{id}/cancel` | discard the draft |
 
 Every editor endpoint returns the whole stream (`offers`, `total_share`, `is_dirty`), so the frontend just replaces that stream in its state.
+
+---
+
+## Notes on the test tracker
+
+- The test API key can see only one offer (`18813`). Other offers return 403, so in the editor they are shown as `Offer #ID`. The editor can be fully tested in demo mode (`KEITARO_MOCK=true`).
+- The tracker is shared between candidates. During testing the `FORTESTS` traffic source was deleted by someone; the app then refuses to create a campaign and shows a clear error instead of creating a half-configured one.
+- Test campaigns are named with a personal prefix, e.g. `test_rasulzade_campaign1`.

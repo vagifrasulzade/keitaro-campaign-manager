@@ -12,13 +12,20 @@ logger = logging.getLogger(__name__)
 
 
 class KeitaroClient:
-    def __init__(self, base_url: str, api_key: str, timeout: float = 20.0):
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        timeout: float = 20.0,
+        transport: httpx.AsyncBaseTransport | None = None,  # tests pass httpx.MockTransport
+    ):
         if not api_key:
             raise KeitaroError("KEITARO_API_KEY is not set (or set KEITARO_MOCK=true for demo mode)")
         self._http = httpx.AsyncClient(
             base_url=base_url,
             headers={"Api-Key": api_key, "Accept": "application/json"},
             timeout=timeout,
+            transport=transport,
         )
 
     async def aclose(self) -> None:
@@ -48,7 +55,16 @@ class KeitaroClient:
             )
         if not response.content:
             return None
-        return response.json()
+        try:
+            return response.json()
+        except ValueError as exc:
+            # e.g. KEITARO_URL points at a web page instead of the tracker → HTML with 200
+            logger.warning("Keitaro %s %s → non-JSON response: %.200s", method, path, response.text)
+            raise KeitaroError(
+                f"Keitaro {method} {path} returned a non-JSON response — check KEITARO_URL",
+                upstream_status=response.status_code,
+                payload=response.text[:500],
+            ) from exc
 
     # --- lookups -----------------------------------------------------------
     async def list_domains(self) -> list[JSON]:

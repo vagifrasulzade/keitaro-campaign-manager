@@ -12,13 +12,13 @@ def _norm_domain(name: str) -> str:
 
 
 def _find_id(items: list[JSON], name: str, *, domain: bool = False) -> int | None:
+    # match by name only: guessing (e.g. "the only item left") would silently pick
+    # the wrong source once the configured one is archived
     norm = _norm_domain if domain else (lambda v: v.strip().lower())
     target = norm(name)
     for item in items:
         if norm(str(item.get("name", ""))) == target:
             return int(item["id"])
-    if len(items) == 1:  # only one choice on this tracker → use it
-        return int(items[0]["id"])
     return None
 
 
@@ -63,10 +63,18 @@ class KeitaroMeta:
         )
 
     @staticmethod
-    def resolve(explicit: int | None, default: int | None, items: list[JSON], label: str) -> int:
+    def resolve(
+        explicit: int | None, default: int | None, items: list[JSON], label: str, default_name: str
+    ) -> int:
+        """`label` is "domain" / "group" / "traffic source"; `default_name` is its DEFAULT_* setting."""
         value = explicit if explicit is not None else default
         if value is None:
-            raise ValidationError(f"{label} is not selected and no default {label} was found in Keitaro")
+            setting = "DEFAULT_" + label.upper().replace(" ", "_")
+            raise ValidationError(
+                f'No {label} selected, and the default {label} "{default_name}" ({setting}) is not among '
+                f"the {len(items)} active {label}s in Keitaro — it may be archived or renamed. "
+                f"Pick a {label} in the form, restore it in Keitaro or change {setting}."
+            )
         if not any(int(i["id"]) == value for i in items):
-            raise ValidationError(f"{label} #{value} does not exist in Keitaro")
+            raise ValidationError(f"{label} #{value} does not exist in Keitaro or is archived")
         return value
