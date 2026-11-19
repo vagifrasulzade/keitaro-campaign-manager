@@ -1,7 +1,23 @@
-.env
-.git
-**/__pycache__
+# patterns without **/ match only the repo root — nested copies need **/
+
+# secrets and local databases never go into the image
+**/.env
 **/*.db
+
+# VCS and editors
+.git
+**/.idea
+**/.vscode
+**/.claude
+
+# Python
+**/.venv
+**/venv
+**/__pycache__
 **/.pytest_cache
-.venv
-venv
+
+# Node: dependencies and the build are recreated inside the image
+# (a Windows node_modules would overwrite the Linux one and break native binaries)
+**/node_modules
+**/dist
+**/*.tsbuildinfo
